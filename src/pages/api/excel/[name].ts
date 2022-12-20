@@ -8,25 +8,27 @@ export const config = {
   },
 };
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
   const { name } = req.query;
-
   if (req.method === "POST") {
-    // parse the request using formidable and get the file
     const form = new formidable.IncomingForm();
     form.parse(req);
-    form.on("file", (field, file) => {
-      // check if the file is an excel file
+    form.on("file", async (field, file) => {
       if (
         file.mimetype !==
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
       ) {
+        res.end();
         return res.status(400).json({ message: "File is not an excel file" });
       }
+      // read the file
       const workbook = XLSX.readFile(file.filepath);
       const worksheet = workbook.Sheets[name as string];
       const data = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
-      return res.json({ data });
+      return res.status(201).json({ data });
     });
   }
 }

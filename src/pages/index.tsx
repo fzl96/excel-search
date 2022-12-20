@@ -1,6 +1,5 @@
-"use client";
-
 import { useMemo, useState } from "react";
+import ClipLoader from "react-spinners/ClipLoader";
 
 export default function About() {
   const [file, setFile] = useState(null);
@@ -8,6 +7,7 @@ export default function About() {
   const [kabupaten, setKabupaten] = useState("");
   const [sheetData, setSheetData] = useState<any>([]);
   const [KecamatanSelect, setKecamatanSelect] = useState("");
+  const [loading, setLoading] = useState(false);
 
   // create a function that remove whitespace from a string except space between words
   const removeWhitespace = (str: string) => {
@@ -70,6 +70,7 @@ export default function About() {
   // }, [desa]);
 
   const handleFetchSheetData = async (kab: string, file: File) => {
+    setLoading(true);
     const formData = new FormData();
     formData.append("file", file);
     const res = await fetch(`/api/excel/${kab}`, {
@@ -78,9 +79,11 @@ export default function About() {
     });
     const data = await res.json();
     setSheetData(data.data);
+    setLoading(false);
   };
 
   const handleFileChange = async (e: any) => {
+    setLoading(true);
     setFile(e.target.files[0]);
     const formData = new FormData();
     formData.append("file", e.target.files[0]);
@@ -91,6 +94,7 @@ export default function About() {
     const data = await res.json();
     handleFetchSheetData(data.sheetNames[0], e.target.files[0]);
     setData(data.sheetNames);
+    setLoading(false);
   };
 
   const handleKabupatenChange = async (e: any) => {
@@ -134,6 +138,8 @@ export default function About() {
     },
     []
   );
+
+  // if (loading) return <ClipLoader color="#ffffff" size={250} />;
 
   return (
     <div className="max-w-7xl flex flex-col gap-5">
@@ -214,7 +220,11 @@ export default function About() {
         </div>
       )}
       <div className="border p-2">
-        {sheetData.length > 0 ? (
+        {loading ? (
+          <div className="text-center">
+            <ClipLoader color="#ffffff" size={200} />
+          </div>
+        ) : sheetData.length > 0 ? (
           <div>
             <table className="table-auto">
               <thead className="text-white text-lg">

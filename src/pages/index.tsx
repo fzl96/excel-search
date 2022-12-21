@@ -1,13 +1,21 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import ClipLoader from "react-spinners/ClipLoader";
+import { useReactToPrint } from "react-to-print";
+import ReactToPrint from "react-to-print";
 
 export default function About() {
+  const componentRef: any = useRef(null);
   const [file, setFile] = useState(null);
   const [data, setData] = useState([]);
   const [kabupaten, setKabupaten] = useState("");
   const [sheetData, setSheetData] = useState<any>([]);
   const [KecamatanSelect, setKecamatanSelect] = useState("");
   const [loading, setLoading] = useState(false);
+  const [print, setPrint] = useState(false);
+
+  const handlePrint = useReactToPrint({
+    content: () => componentRef.current,
+  });
 
   // create a function that remove whitespace from a string except space between words
   const removeWhitespace = (str: string) => {
@@ -108,6 +116,22 @@ export default function About() {
     setKecamatanSelect(e.target.value);
   };
 
+  const pageStyle = `
+  @media all {
+    .pagebreak {
+      display: none;
+    }
+  }
+
+  @media print {
+    .pagebreak {
+      margin-top: 1rem;
+      page-break-before: always;
+      display: block;
+    }
+  }
+`;
+
   const jumlahPinjamDariBarang = filteredSheetData.reduce(
     (acc: any, cur: any) => {
       const desaExist = acc.find((obj: any) => obj.desa === cur.__EMPTY_2);
@@ -139,8 +163,6 @@ export default function About() {
     []
   );
 
-  // if (loading) return <ClipLoader color="#ffffff" size={250} />;
-
   return (
     <div className="max-w-7xl flex flex-col gap-5">
       <input
@@ -150,46 +172,83 @@ export default function About() {
         onChange={handleFileChange}
         className="text-white bg-transparent border border-white rounded-lg p-2"
       />
-      <form className="flex flex-col gap-3">
-        <label htmlFor="Kabupaten" className="text-white text-2xl">
-          Pilih kabupaten
-        </label>
-        <select
-          name="Kabupaten"
-          id="Kabupaten"
-          disabled={data.length === 0}
-          onChange={handleKabupatenChange}
-        >
-          {data &&
-            data.map((item: string, index: number) => (
-              <option key={item + index} value={item}>
-                {item}
-              </option>
-            ))}
-        </select>
-        <label htmlFor="Kecamatan" className="text-white text-2xl">
-          Pilih kecamtan
-        </label>
-        <select
-          name="kecamatan"
-          id="kecamatan"
-          onChange={handleKecamatanChange}
-          disabled={data.length === 0}
-        >
-          {kecamatan.length > 0 &&
-            kecamatan.map((item: any, index: number) => {
-              if (index === 1) return;
-              return (
+      <form className="flex gap-10">
+        <div className="flex flex-col gap-2">
+          <label htmlFor="Kabupaten" className="text-white text-2xl">
+            Pilih kabupaten
+          </label>
+          <select
+            name="Kabupaten"
+            id="Kabupaten"
+            disabled={data.length === 0}
+            onChange={handleKabupatenChange}
+            className="py-2 px-4 rounded-lg"
+          >
+            {data &&
+              data.map((item: string, index: number) => (
                 <option key={item + index} value={item}>
-                  {capitalize(item)}
+                  {item}
                 </option>
-              );
-            })}
-        </select>
+              ))}
+          </select>
+        </div>
+        <div className="flex flex-col gap-2">
+          <label htmlFor="Kecamatan" className="text-white text-2xl">
+            Pilih kecamatan
+          </label>
+          <select
+            name="kecamatan"
+            id="kecamatan"
+            onChange={handleKecamatanChange}
+            disabled={data.length === 0}
+            className="py-2 px-4 rounded-lg"
+          >
+            {kecamatan.length > 0 &&
+              kecamatan.map((item: any, index: number) => {
+                if (index === 1) return;
+                return (
+                  <option key={item + index} value={item}>
+                    {capitalize(item)}
+                  </option>
+                );
+              })}
+          </select>
+        </div>
       </form>
+      {/* <button
+        onClick={handlePrint}
+        disabled={!KecamatanSelect}
+        className={`py-2 px-3 ${
+          !KecamatanSelect ? "bg-green-800" : "bg-green-600"
+        } rounded-lg`}
+      >
+        Print
+      </button> */}
+      <ReactToPrint
+        trigger={() => (
+          <button
+            className={`${
+              !KecamatanSelect ? "bg-green-800" : "bg-green-600"
+            } py-2 rounded-lg font-semibold`}
+            disabled={!KecamatanSelect}
+          >
+            Print
+          </button>
+        )}
+        content={() => componentRef.current}
+        onBeforeGetContent={() =>
+          componentRef.current.classList.remove("text-white")
+        }
+        onAfterPrint={() => componentRef.current.classList.add("text-white")}
+        pageStyle={pageStyle}
+      />
       {KecamatanSelect && (
-        <div className="text-white text-lg">
-          <h1>
+        <div
+          className={`text-white text-lg m-10`}
+          id="report"
+          ref={componentRef}
+        >
+          <h1 className="mb-3">
             Kecamatan : <span className="font-bold">{KecamatanSelect}</span>
           </h1>
           <div className="flex gap-2">
@@ -198,13 +257,13 @@ export default function About() {
               {jumlahPinjamDariBarang.map((item: any) => {
                 return (
                   <li key={item.desa} className="flex gap-2">
-                    <div className="w-[10rem]">{item.desa}</div>:
+                    <div className="w-[7rem] font-semibold">{item.desa}</div>:
                     <div>
                       {item.barang.map((barang: any) => {
                         return (
                           <p
                             key={barang.nama}
-                            className="flex items-center border-b pb-2 mb-4"
+                            className="flex items-center border-b pb-2 mb-2"
                           >
                             <span className="w-[20rem]">{barang.nama}</span>
                             <span className="text-2xl">{barang.jumlah}</span>
@@ -219,7 +278,7 @@ export default function About() {
           </div>
         </div>
       )}
-      <div className="border p-2">
+      <div className="border rounded-lg p-2">
         {loading ? (
           <div className="text-center">
             <ClipLoader color="#ffffff" size={200} />
